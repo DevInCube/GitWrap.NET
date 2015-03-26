@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,13 +12,26 @@ namespace My.GitWrap.ConsoleTest
     {
         static void Main(string[] args)
         {
-            XDocument doc = XDocument.Load("auth.xml");
-            string password = doc.Root.Element("password").Value;
+            string authFile = "auth.xml";
+            XDocument doc = null;
+            string password = null;
+            try
+            {
+                doc = XDocument.Load(authFile);
+                password = doc.Root.Element("password").Value;
+            }
+            catch (IOException)
+            {
+                Console.WriteLine("Enter password:");
+                password = Console.ReadLine();
+                doc = new XDocument(
+                    new XElement("auth", 
+                        new XElement("password", password)));
+                doc.Save(authFile);
+            }
             Git git = new Git();
             string local = @"C:\Users\user\Desktop\Новая папка (7)";
             //git.Clone("https://github.com/DevInCube/EdgeServerTest.git", local);
-            //Console.WriteLine("Enter password:");
-            //string password = Console.ReadLine();
             git.SetUser("DevInCube", "devincube@gmail.com", password);
             git.Connect(local);
             Console.WriteLine(String.Format("Connected to {0}", local));
