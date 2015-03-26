@@ -9,7 +9,7 @@ using VitML.Configurator.EdgeServerSource.Exceptions;
 
 namespace My.GitWrap
 {
-    public class Git
+    public class Git : IDisposable
     {        
 
         private Repository repo;
@@ -35,6 +35,8 @@ namespace My.GitWrap
         public void Connect(string repoPath)
         {
             if (String.IsNullOrWhiteSpace(repoPath)) throw new ArgumentNullException("repoPath");
+
+            this.Dispose();
 
             RepositoryOptions opt = new RepositoryOptions();            
             try
@@ -212,7 +214,7 @@ namespace My.GitWrap
             opt.CredentialsProvider = UserCredentialsProvider;
             try
             {
-                repo.Fetch(repo.Head.Remote.Name, opt);
+                repo.Fetch(repo.Head.Remote.Name, opt);                    
             }
             catch (LibGit2SharpException gitex)
             {
@@ -224,6 +226,12 @@ namespace My.GitWrap
                 //@todo - тут виникає AccessViolationException і repo Dispose                
                 //Connect(rootDir); //@todo
             }
+        }
+
+        public void Dispose()
+        {
+            if (repo != null)
+                repo.Dispose();
         }
     }
 }
