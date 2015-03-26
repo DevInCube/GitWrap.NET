@@ -77,7 +77,7 @@ namespace My.GitWrap
             }
             catch (LibGit2SharpException gitex)
             {
-                throw new GitConnectionException("No internet connection", gitex);
+                throw new GitConnectionException(gitex.Message, gitex);
             }
             catch (Exception e)
             {
@@ -132,7 +132,7 @@ namespace My.GitWrap
             foreach (var entry in status.Modified)
                 repo.Stage(entry.FilePath);
             foreach (var entry in status.Removed)
-                repo.Unstage(entry.FilePath);
+                repo.Stage(entry.FilePath);
             status = repo.RetrieveStatus();
             if (status.IsDirty)
                 Commit("auto commit;");
@@ -145,7 +145,9 @@ namespace My.GitWrap
 
         public void Commit(string message)
         {
-            CommitOptions opt = new CommitOptions();
+            if (String.IsNullOrWhiteSpace(message)) throw new ArgumentNullException("message");
+
+            CommitOptions opt = new CommitOptions();         
             try
             {
                 Commit commit = repo.Commit(message, opt);
@@ -179,7 +181,7 @@ namespace My.GitWrap
             if (String.IsNullOrWhiteSpace(localpath)) throw new ArgumentNullException("localpath");
 
             var opt = new CloneOptions();
-            opt.CredentialsProvider = UserCredentialsProvider;
+            opt.CredentialsProvider = UserCredentialsProvider;            
             try
             {
                 string clonedRepoPath = Repository.Clone(remote, localpath, opt);
@@ -194,7 +196,7 @@ namespace My.GitWrap
             }
             catch (LibGit2SharpException ex)
             {
-                throw new GitConnectionException("No internet connection", ex);
+                throw new GitConnectionException(ex.Message, ex);
             }
         }
 
@@ -207,13 +209,14 @@ namespace My.GitWrap
         public void Fetch()
         {
             FetchOptions opt = new FetchOptions();
+            opt.CredentialsProvider = UserCredentialsProvider;
             try
             {
                 repo.Fetch(repo.Head.Remote.Name, opt);
             }
             catch (LibGit2SharpException gitex)
             {
-                throw new GitConnectionException("No internet connection", gitex);
+                throw new GitConnectionException(gitex.Message, gitex);
             }
             catch (Exception ex)
             {
