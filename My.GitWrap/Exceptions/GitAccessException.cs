@@ -11,7 +11,6 @@ namespace VitML.Configurator.EdgeServerSource.Exceptions
 
         public GitAccessException() { }
         public GitAccessException(string msg) : base(msg) { }
-
         public GitAccessException(string message, Exception inner) : base(message, inner) { }
     }
 }

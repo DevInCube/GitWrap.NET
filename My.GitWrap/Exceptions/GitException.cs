@@ -8,6 +8,7 @@ namespace VitML.Configurator.EdgeServerSource.Exceptions
 {
     public abstract class GitException : Exception
     {
+
         public GitException() { }
         public GitException(string msg) : base(msg) { }
         public GitException(string msg, Exception inner) : base(msg, inner) { }

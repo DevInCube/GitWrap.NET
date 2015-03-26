@@ -8,7 +8,9 @@ namespace VitML.Configurator.EdgeServerSource.Exceptions
 {
     public class GitConnectionException : GitException
     {
+
         public GitConnectionException() { }
         public GitConnectionException(string msg) : base(msg) { }
+        public GitConnectionException(string message, Exception inner) : base(message, inner) { }
     }
 }

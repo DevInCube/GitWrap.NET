@@ -10,11 +10,9 @@ using VitML.Configurator.EdgeServerSource.Exceptions;
 namespace My.GitWrap
 {
     public class Git
-    {
+    {        
 
-        const string ORIGIN_MASTER = "origin";
-
-        private Repository repo;        
+        private Repository repo;
         private UsernamePasswordCredentials user;
         private string email;
 
@@ -53,11 +51,21 @@ namespace My.GitWrap
         {
             SaveLocalChanges();
             Fetch();
-            int? ahead = repo.Head.TrackingDetails.AheadBy;
             int? behind = repo.Head.TrackingDetails.BehindBy;
-            if (behind != null && behind > 0)
-                Pull();
-            PushOptions opt = new PushOptions();            
+            if (behind > 0)
+            {
+                InnerPull();
+            }
+            int? ahead = repo.Head.TrackingDetails.AheadBy;
+            if (ahead > 0)
+            {
+                InnerPush();
+            }
+        }
+
+        private void InnerPush()
+        {
+            PushOptions opt = new PushOptions();
             opt.CredentialsProvider = UserCredentialsProvider;
             try
             {
@@ -65,38 +73,47 @@ namespace My.GitWrap
             }
             catch (NonFastForwardException nfe)
             {
-                throw new GitSyncException("Non fast Forward. Pull first", nfe);
+                throw new GitSyncException("Non Fast Forward. Pull first", nfe);
+            }
+            catch (LibGit2SharpException gitex)
+            {
+                throw new GitConnectionException("No internet connection", gitex);
             }
             catch (Exception e)
             {
                 throw new GitAccessException("Unauthorized git user", e);
             }
         }
+
         public void Pull()
         {
             SaveLocalChanges();
-            Fetch();
-            int? ahead = repo.Head.TrackingDetails.AheadBy;
+            Fetch();            
             int? behind = repo.Head.TrackingDetails.BehindBy;
-            if (behind != null && behind > 0)
+            if (behind > 0)
             {
-                Signature comSig = CreateSignature();
-                PullOptions opt = new PullOptions();                
-                opt.MergeOptions = new MergeOptions();
-                opt.MergeOptions.CommitOnSuccess = true;
-                opt.MergeOptions.MergeFileFavor = MergeFileFavor.Theirs;
-                try
+                InnerPull();
+            }
+        }
+
+        private void InnerPull()
+        {
+            Signature comSig = CreateSignature();
+            PullOptions opt = new PullOptions();
+            opt.MergeOptions = new MergeOptions();
+            opt.MergeOptions.CommitOnSuccess = true;
+            opt.MergeOptions.MergeFileFavor = MergeFileFavor.Theirs;
+            try
+            {
+                MergeResult mergeResult = repo.Network.Pull(comSig, opt);
+                if (mergeResult.Status == MergeStatus.Conflicts)
                 {
-                    MergeResult mergeResult = repo.Network.Pull(comSig, opt);
-                    if (mergeResult.Status == MergeStatus.Conflicts)
-                    {
-                        throw new GitSyncException("Merge conflict. Not auto merged");
-                    }
+                    throw new GitSyncException("Merge conflict. Not auto merged");
                 }
-                catch (MergeConflictException mce)
-                {
-                    throw new GitSyncException("Merge conflict", mce);
-                }
+            }
+            catch (MergeConflictException mce)
+            {
+                throw new GitSyncException("Merge conflict", mce);
             }
         }
 
@@ -155,20 +172,29 @@ namespace My.GitWrap
                 throw new GitSyncException("Merge conflict was not resolved", e);
             }
         }
-        public void Clone(string gitrepo, string localpath)
+
+        public void Clone(string remote, string localpath)
         {
-            if (String.IsNullOrWhiteSpace(gitrepo)) throw new ArgumentNullException("gitrepo");
+            if (String.IsNullOrWhiteSpace(remote)) throw new ArgumentNullException("remote");
             if (String.IsNullOrWhiteSpace(localpath)) throw new ArgumentNullException("localpath");
 
             var opt = new CloneOptions();
             opt.CredentialsProvider = UserCredentialsProvider;
             try
             {
-                string clonedRepoPath = Repository.Clone(gitrepo, localpath, opt);
+                string clonedRepoPath = Repository.Clone(remote, localpath, opt);
             }
             catch (NameConflictException nce)
             {
                 throw new GitRepoException("Cannot clone to directory as it is not empty", nce);
+            }
+            catch (NullReferenceException nre)
+            {
+                throw new GitRepoException(String.Format("Invalid remote link '{0}'", remote), nre);
+            }
+            catch (LibGit2SharpException ex)
+            {
+                throw new GitConnectionException("No internet connection", ex);
             }
         }
 
@@ -183,7 +209,11 @@ namespace My.GitWrap
             FetchOptions opt = new FetchOptions();
             try
             {
-                repo.Fetch(ORIGIN_MASTER, opt);
+                repo.Fetch(repo.Head.Remote.Name, opt);
+            }
+            catch (LibGit2SharpException gitex)
+            {
+                throw new GitConnectionException("No internet connection", gitex);
             }
             catch (Exception ex)
             {

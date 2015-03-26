@@ -11,7 +11,6 @@ namespace VitML.Configurator.EdgeServerSource.Exceptions
 
         public GitSyncException() { }
         public GitSyncException(string msg) : base(msg) { }
-
         public GitSyncException(string message, Exception inner) : base(message, inner) { }
     }
 }

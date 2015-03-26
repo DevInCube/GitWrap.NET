@@ -10,8 +10,8 @@ namespace My.GitWrap.ConsoleTest
     {
         static void Main(string[] args)
         {
-            Git git = new Git();            
-            string local = @"C:\Users\DevInCube\Desktop\GitTest";
+            Git git = new Git();
+            string local = @"C:\Users\user\Desktop\Новая папка (7)";
             //git.Clone("https://github.com/DevInCube/EdgeServerTest.git", local);
             Console.WriteLine("Enter password:");
             string password = Console.ReadLine();
